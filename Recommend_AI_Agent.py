@@ -44,12 +44,15 @@ def load_data():
     try:
         d = pd.read_csv(os.path.join(DATA_DIR, "domain_worker_desires.csv"))
         c = pd.read_csv(os.path.join(DATA_DIR, "expert_rated_technological_capability.csv"))
-        return d, c
+        m = pd.read_csv(os.path.join(DATA_DIR, "domain_worker_metadata.csv")) 
+        n = pd.read_csv(os.path.join(DATA_DIR, "task_statement_with_metadata.csv"))
+        return d, c, m, n 
     except FileNotFoundError:
         st.error("Không tìm thấy các file dữ liệu CSV trong thư mục. Vui lòng kiểm tra lại!")
         st.stop()
 
-desires, capability = load_data()
+# Khai báo thêm biến metadata để hứng dữ liệu từ file mới
+desires, capability, worker_metadata, task_metadata = load_data()
 
 CS_ROLES = [
     "Computer Programmers", "Computer Systems Analysts",
@@ -59,6 +62,13 @@ CS_ROLES = [
     "Web Developers", "Database Administrators", "Information Security Analysts",
     "Information Technology Project Managers", "Network and Computer Systems Administrators"
 ]
+# ===== KHỞI TẠO BỘ NHỚ TẠM (LIÊN KẾT TRANG 3 VÀ TRANG 4) =====
+if "saved_role" not in st.session_state:
+    st.session_state["saved_role"] = CS_ROLES[0]
+if "saved_exp" not in st.session_state:
+    st.session_state["saved_exp"] = "Tất cả mức kinh nghiệm"
+if "saved_gap" not in st.session_state:
+    st.session_state["saved_gap"] = 0.0
 
 # Lọc riêng bảng dữ liệu mong muốn của nhân viên, chỉ giữ lại 13 ngành Khoa học máy tính
 cs_desires_filtered = desires[desires["Occupation (O*NET-SOC Title)"].isin(CS_ROLES)]
@@ -194,46 +204,30 @@ elif choice == "Gap Analysis":
     st.plotly_chart(fig2, use_container_width=True, theme=None)
 
     st.markdown("---")
-    st.subheader("Bản Đồ Định Vị")
-    st.markdown("""
-    Bản đồ này chia làm 4 khu vực. Trục ngang là sức mạnh của AI, trục dọc là khao khát của con người. 
-    Chấm tròn (ngành nghề) rơi vào góc nào sẽ quyết định chiến lược đó:
+    st.subheader("💡 Đọc vị tâm lý nhân sự từ Biểu đồ Độ lệch")
+    
+    col_red, col_green = st.columns(2)
+    
+    with col_red:
+        st.error("""
+        **🛑 Nhóm Cảnh Giác & E Dè (Thanh màu Đỏ - Gap Âm):**
+        * **Đại diện tiêu biểu:** Database Administrators, Computer Network Support Specialists, Web Developers.
+        * **Đặc điểm:** Đây là những người nắm giữ "huyết mạch" của hệ thống (dữ liệu khách hàng, máy chủ, hạ tầng mạng). Mọi sai sót của AI đều có thể gây sập hệ thống hoặc lộ dữ liệu nhạy cảm.
+        * **Insight:** AI hiện tại đủ sức làm, nhưng nhân viên từ chối giao quyền tự quyết. Họ thà tự làm còn hơn chịu rủi ro đạo đức/pháp lý do AI gây ra.
+        """)
+        
+    with col_green:
+        st.success("""
+        **🟢 Nhóm Khao Khát & Chờ Đợi (Thanh màu Xanh - Gap Dương):**
+        * **Đại diện tiêu biểu:** Computer and Information Research Scientists, Information Technology Project Managers.
+        * **Đặc điểm:** Đây là những công việc thiên về xử lý khối lượng thông tin khổng lồ, đọc tài liệu khoa học, hoặc quản lý tiến độ tổng thể. Họ đang bị quá tải (cognitive overload).
+        * **Insight:** Nhóm này sẵn sàng chấp nhận việc AI chưa hoàn hảo, miễn là AI giúp họ tóm tắt, tổng hợp và giảm bớt gánh nặng. Động lực giải phóng sức lao động hoàn toàn lấn át rào cản sợ hãi.
+        """)
+        
+    st.info("""
+    **⚖️ Nhóm Cân Bằng (Khu vực trung tâm - Xấp xỉ 0):** \n
+    Các ngành như *Software Quality Assurance Analysts* hay *Computer Systems Analysts* có độ lệch không quá lớn. Họ hiểu rõ giới hạn của AI: biết dùng AI để tăng tốc công việc, nhưng vẫn ý thức được việc phải tự mình rà soát lại kết quả cuối cùng.
     """)
-    
-    cs_gap['Category'] = cs_gap['Gap'].apply(lambda x: 'Nhóm E dè (Đỏ)' if x < 0 else 'Nhóm Chờ đợi (Xanh)')
-    
-    fig_scatter = px.scatter(
-        cs_gap, 
-        x="Expert Capacity", 
-        y="Worker Desire", 
-        color="Category",
-        color_discrete_sequence=["#ef553b", "#00cc96"], 
-        size=[12]*len(cs_gap), 
-        hover_name="Occupation", 
-        text="Occupation",
-        title="Bản Đồ 4 Góc Phần Tư (Desire vs Capacity)"
-    )
-    
-    # CHỈNH SỬA: Đổi mốc gõ tay 3.5 thành điểm trung bình tự động của riêng khối CS để phân loại chuẩn xác
-    mean_cap = cs_gap["Expert Capacity"].mean()
-    mean_des = cs_gap["Worker Desire"].mean()
-    
-    fig_scatter.update_traces(
-        marker=dict(line=dict(width=3, color='black')), 
-        textposition='top center', 
-        textfont=dict(size=16, color="black") 
-    )
-    
-    fig_scatter.add_hline(y=mean_des, line_dash="dash", line_color="black", line_width=2, annotation_text=f"Mức TB Mong muốn ({mean_des:.2f})", annotation_font_size=16)
-    fig_scatter.add_vline(x=mean_cap, line_dash="dash", line_color="black", line_width=2, annotation_text=f"Mức TB Năng lực AI ({mean_cap:.2f})", annotation_font_size=16)
-    
-    fig_scatter.update_layout(
-        height=800, 
-        font=dict(color="black", size=18), 
-        title_font_size=26
-    )
-    st.plotly_chart(fig_scatter, use_container_width=True, theme=None)
-    
 # =====================================================================
 # 3. TRANG CS DEEP DIVE
 # =====================================================================
@@ -241,94 +235,152 @@ elif choice == "CS Deep Dive":
     st.title("Phân tích xem nhân viên Ngành Khoa Học Máy Tính nghĩ gì?")
     st.markdown("Nỗi lo lớn nhất của nhân viên các ngành thuộc Khoa Học Máy Tính là gì:")
 
-    role = st.selectbox("Lựa Chọn Nghề Nghiệp:", CS_ROLES)
+    # 1. Gộp dữ liệu Tâm lý (desires) và Nhân khẩu học (metadata)
+    df_merged = pd.merge(desires, worker_metadata, on=['User ID', 'Occupation (O*NET-SOC Title)'], how='inner')
 
-    diem_gap = cs_gap[cs_gap["Occupation"] == role]["Gap"].values[0]
-    diem_muon = avg_desire.get(role, 0)
-    diem_may_gioi = avg_cap.get(role, 0)
-    d_sub = desires[desires["Occupation (O*NET-SOC Title)"] == role]
+    # 2. Tạo 2 Selectbox cạnh nhau (Nghề nghiệp và Kinh nghiệm)
+    col_filter1, col_filter2 = st.columns(2)
+    with col_filter1:
+        role = st.selectbox("Lựa Chọn Nghề Nghiệp:", CS_ROLES)
+    with col_filter2:
+        danh_sach_kinh_nghiem = [
+            "Tất cả mức kinh nghiệm", 
+            "Less than 1 year", 
+            "1-2 year", 
+            "3-5 years", 
+            "6-10 years", 
+            "More than 10 years"
+        ]
+        exp = st.selectbox("Lựa Chọn Số Năm Kinh Nghiệm:", danh_sach_kinh_nghiem)
 
-    dong_luc = {
-        "Muốn có thời gian nghỉ ngơi  ": d_sub["Reasons for Automation Desire - Free Time"].sum(),
-        "Việc nhiều quá, làm tay không nổi  ": d_sub["Reasons for Automation Desire - Scale"].sum(),
-        "Máy làm sẽ ít sai vặt hơn người  ": d_sub["Reasons for Automation Desire - Human Error"].sum(),
-        "Chán phải làm đi làm lại một việc  ": d_sub["Reasons for Automation Desire - Repetitive"].sum(),
-        "Công việc hiện tại quá mệt mỏi  ": d_sub["Reasons for Automation Desire - Stress"].sum()
-    }
-    thich_nhat = max(dong_luc, key=dong_luc.get)
-
-    rao_can = {
-        "Sợ máy làm sai, phải có người kiểm tra ": d_sub["Reasons for Human Agency - Quality Oversight"].sum(),
-        "Sợ máy tự làm hỏng hệ thống ": d_sub["Reasons for Human Agency - Control"].sum(),
-        "Nếu máy sai ai đền? Cần người chịu trách nhiệm ": d_sub["Reasons for Human Agency - Ethical"].sum(),
-        "Máy không hiểu tình hình thực tế của công ty ": d_sub["Reasons for Human Agency - Domain Knowledge"].sum()
-    }
-    so_nhat = max(rao_can, key=rao_can.get)
-
-    st.markdown("---")
-    if diem_gap < -0.5:
-        nhan_xet = "Nhóm Cẩn Thận (Máy làm dư sức nhưng nhân viên không dám giao)"
-        loi_khuyen = "Tuyệt đối không để máy tự làm tự quyết. Phải bắt máy làm nháp, người kiểm tra xong mới được chạy."
-    elif diem_gap > 0.5:
-        nhan_xet = "Nhóm Mệt Mỏi (Đang làm việc quá sức, rất muốn có máy làm thay)"
-        loi_khuyen = "Cứ mạnh dạn giao hết mấy việc lặt vặt cho máy làm để nhân viên được nghỉ ngơi."
+    # 3. Lọc dữ liệu theo lựa chọn
+    if exp == "Tất cả mức kinh nghiệm":
+        d_sub = df_merged[df_merged["Occupation (O*NET-SOC Title)"] == role]
     else:
-        nhan_xet = "Nhóm Cân Bằng (Biết chia việc hợp lý)"
-        loi_khuyen = "Chia việc đôi bên cùng làm. Máy xử lý dữ liệu thô, con người ra quyết định."
-
-    st.subheader(f"Kết quả phân tích nghề: {role}")
-    
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.metric("Điểm Gap (Mong muốn - Năng lực AI hiện tại)", f"{diem_gap:+.2f}")
-        st.write(f"**Điểm nhân viên mong muốn:** {diem_muon:.2f} / 5.0")
-        st.write(f"**Điểm năng lực của AI hiện tại:** {diem_may_gioi:.2f} / 5.0")
-    
-    with col2:
-        st.markdown(f"**Nhận xét:  học thuộc** {nhan_xet}")
-        st.markdown(f"**Lý do muốn dùng AI :** {thich_nhat}")
-        st.markdown(f"**Lý do sợ giao việc cho AI:** {so_nhat}")
-        st.markdown(f"**Lời Khuyên:** {loi_khuyen}")
+        d_sub = df_merged[(df_merged["Occupation (O*NET-SOC Title)"] == role) & (df_merged["Experience"] == exp)]
 
     st.markdown("---")
-    st.subheader("Biểu đồ chi tiết: Động lực thúc đẩy vs Rào cản tâm lý")
     
-    df_dong_luc = pd.DataFrame({
-        "Lý do": list(dong_luc.keys()),
-        "Số người chọn": list(dong_luc.values())
-    }).sort_values("Số người chọn", ascending=True)
-    
-    df_rao_can = pd.DataFrame({
-        "Lý do": list(rao_can.keys()),
-        "Số người chọn": list(rao_can.values())
-    }).sort_values("Số người chọn", ascending=True)
-    
-    chart_col1, chart_col2 = st.columns(2)
-    
-    with chart_col1:
-        fig_muon = px.bar(df_dong_luc, x="Số người chọn", y="Lý do", orientation="h", 
-                          title="Các lý do khuyến khích muốn dùng AI",
-                          color_discrete_sequence=["#1E88E5"])
-        fig_muon.update_traces(texttemplate="%{x} người", textposition="outside", textfont=dict(size=16, color="black"))
-        fig_muon.update_layout(height=450, font=dict(size=16, color="black"), margin=dict(l=350,r=100))
-        fig_muon.update_yaxes(title="")
-        st.plotly_chart(fig_muon, use_container_width=True, theme=None)
+    # 4. Tính toán điểm Gap ĐỘNG (Dynamic Gap)
+    diem_may_gioi = avg_cap.get(role, 0)
+
+    if len(d_sub) > 0:
+        diem_muon = d_sub["Automation Desire Rating"].mean()
+        diem_gap = diem_muon - diem_may_gioi
+
+        dong_luc = {
+            "Muốn có thời gian nghỉ ngơi  ": d_sub["Reasons for Automation Desire - Free Time"].sum(),
+            "Việc nhiều quá, làm tay không nổi  ": d_sub["Reasons for Automation Desire - Scale"].sum(),
+            "Máy làm sẽ ít sai vặt hơn người  ": d_sub["Reasons for Automation Desire - Human Error"].sum(),
+            "Chán phải làm đi làm lại một việc  ": d_sub["Reasons for Automation Desire - Repetitive"].sum(),
+            "Công việc hiện tại quá mệt mỏi  ": d_sub["Reasons for Automation Desire - Stress"].sum()
+        }
+        thich_nhat = max(dong_luc, key=dong_luc.get) if sum(dong_luc.values()) > 0 else "Không có dữ liệu"
+
+        rao_can = {
+            "Sợ máy làm sai, phải có người kiểm tra ": d_sub["Reasons for Human Agency - Quality Oversight"].sum(),
+            "Sợ máy tự làm hỏng hệ thống ": d_sub["Reasons for Human Agency - Control"].sum(),
+            "Nếu máy sai ai đền? Cần người chịu trách nhiệm ": d_sub["Reasons for Human Agency - Ethical"].sum(),
+            "Máy không hiểu tình hình thực tế của công ty ": d_sub["Reasons for Human Agency - Domain Knowledge"].sum()
+        }
+        so_nhat = max(rao_can, key=rao_can.get) if sum(rao_can.values()) > 0 else "Không có dữ liệu"
+
+        # Đánh giá chung dựa trên biên độ 0.5
+        if diem_gap < -0.5:
+            nhan_xet = "Nhóm Cẩn Thận (Máy làm dư sức nhưng nhân viên không dám giao)"
+            loi_khuyen = "Tuyệt đối không để máy tự làm tự quyết. Phải bắt máy làm nháp, người kiểm tra xong mới được chạy."
+        elif diem_gap > 0.5:
+            nhan_xet = "Nhóm Mệt Mỏi (Đang làm việc quá sức, rất muốn có máy làm thay)"
+            loi_khuyen = "Cứ mạnh dạn giao hết mấy việc lặt vặt cho máy làm để nhân viên được nghỉ ngơi."
+        else:
+            nhan_xet = "Nhóm Cân Bằng (Biết chia việc hợp lý)"
+            loi_khuyen = "Chia việc đôi bên cùng làm. Máy xử lý dữ liệu thô, con người ra quyết định."
+
+        st.subheader(f"Kết quả phân tích: {role} ({exp})")
         
-    with chart_col2:
-        fig_so = px.bar(df_rao_can, x="Số người chọn", y="Lý do", orientation="h", 
-                         title="Các nỗi lo ngăn cản giao việc cho AI",
-                         color_discrete_sequence=["#D32F2F"])
-        fig_so.update_traces(texttemplate="%{x} người", textposition="outside", textfont=dict(size=16, color="black"))
-        fig_so.update_layout(height=450, font=dict(size=16, color="black"), margin=dict(l=350,r=100))
-        fig_so.update_yaxes(title="")
-        st.plotly_chart(fig_so, use_container_width=True, theme=None)
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.metric("Điểm Gap (Mong muốn - Năng lực AI)", f"{diem_gap:+.2f}")
+            st.write(f"**Điểm khao khát của nhóm này:** {diem_muon:.2f} / 5.0")
+            st.write(f"**Điểm năng lực AI thực tế:** {diem_may_gioi:.2f} / 5.0")
+        
+        with col2:
+            st.markdown(f"**Nhận xét:** {nhan_xet}")
+            st.markdown(f"**Lời Khuyên:** {loi_khuyen}")
+
+        # ===== HIỂN THỊ BIỂU ĐỒ ĐỘNG THEO BIÊN ĐỘ (-0.5 ĐẾN 0.5) =====
+        st.markdown("---")
+        df_dong_luc = pd.DataFrame({
+            "Lý do": list(dong_luc.keys()),
+            "Số người chọn": list(dong_luc.values())
+        }).sort_values("Số người chọn", ascending=True)
+        
+        df_rao_can = pd.DataFrame({
+            "Lý do": list(rao_can.keys()),
+            "Số người chọn": list(rao_can.values())
+        }).sort_values("Số người chọn", ascending=True)
+
+        if diem_gap > 0.5: 
+            st.subheader("📈 Tại sao nhóm này lại khao khát AI đến vậy?")
+            st.markdown("*(Khoảng cách Gap lớn hơn 0.5. Chỉ hiển thị các lý do khuyến khích xài AI do nhu cầu quá lớn)*")
+            fig_muon = px.bar(df_dong_luc, x="Số người chọn", y="Lý do", orientation="h", color_discrete_sequence=["#1E88E5"])
+            fig_muon.update_traces(texttemplate="%{x} người", textposition="outside", textfont=dict(size=16, color="black"))
+            fig_muon.update_layout(height=450, font=dict(size=16, color="black"), margin=dict(l=350, r=100))
+            fig_muon.update_yaxes(title="")
+            st.plotly_chart(fig_muon, use_container_width=True, theme=None)
+
+        elif diem_gap < -0.5:
+            st.subheader("🛡️ Điều gì khiến nhóm này e dè việc giao quyền cho AI?")
+            st.markdown("*(Khoảng cách Gap thấp hơn -0.5. Chỉ hiển thị các rào cản tâm lý do sự e dè lấn át)*")
+            fig_so = px.bar(df_rao_can, x="Số người chọn", y="Lý do", orientation="h", color_discrete_sequence=["#D32F2F"])
+            fig_so.update_traces(texttemplate="%{x} người", textposition="outside", textfont=dict(size=16, color="black"))
+            fig_so.update_layout(height=450, font=dict(size=16, color="black"), margin=dict(l=350, r=100))
+            fig_so.update_yaxes(title="")
+            st.plotly_chart(fig_so, use_container_width=True, theme=None)
+
+        else:
+            st.subheader("⚖️ Trạng thái giằng co: Điểm mong muốn và thực tế khá cân bằng")
+            st.markdown(f"*(Khoảng cách Gap là **{diem_gap:+.2f}**, nằm trong vùng dao động từ -0.5 đến 0.5. Hiển thị đối trọng cả hai góc nhìn)*")
+            chart_col1, chart_col2 = st.columns(2)
+            with chart_col1:
+                st.markdown("**Động lực thúc đẩy:**")
+                fig_muon = px.bar(df_dong_luc, x="Số người chọn", y="Lý do", orientation="h", color_discrete_sequence=["#1E88E5"])
+                fig_muon.update_traces(texttemplate="%{x} người", textposition="outside", textfont=dict(size=16, color="black"))
+                fig_muon.update_layout(height=400, font=dict(size=16, color="black"), margin=dict(l=350, r=50))
+                fig_muon.update_yaxes(title="")
+                st.plotly_chart(fig_muon, use_container_width=True, theme=None)
+            with chart_col2:
+                st.markdown("**Rào cản tâm lý:**")
+                fig_so = px.bar(df_rao_can, x="Số người chọn", y="Lý do", orientation="h", color_discrete_sequence=["#D32F2F"])
+                fig_so.update_traces(texttemplate="%{x} người", textposition="outside", textfont=dict(size=16, color="black"))
+                fig_so.update_layout(height=400, font=dict(size=16, color="black"), margin=dict(l=350, r=50))
+                fig_so.update_yaxes(title="")
+                st.plotly_chart(fig_so, use_container_width=True, theme=None)
+
 
 # =====================================================================
-# 4. TRANG ĐỀ XUẤT AI AGENT
+# 4. TRANG ĐỀ XUẤT AI AGENT (ĐỘNG THEO LỰA CHỌN)
 # =====================================================================
 elif choice == "Đề xuất AI Agent":
-    st.title("Đề Xuất AI Agent")
-    st.markdown("Dựa vào điểm chênh lệch ở trang trước, máy tính sẽ đưa ra lời khuyên xem **nên dùng AI Agent nào**.")
+    st.title("Đề Xuất AI Agent Chuyên Biệt")
+    st.markdown("Cấu hình hệ thống AI được thiết kế tự động hóa dựa trên điểm Gap tâm lý của từng nhóm kinh nghiệm.")
+
+    # 1. Gộp dữ liệu để tính toán giống Trang 3
+    df_merged = pd.merge(desires, worker_metadata, on=['User ID', 'Occupation (O*NET-SOC Title)'], how='inner')
+
+    # 2. Bộ lọc (Tự động lấy giá trị từ Session State nếu có, nếu không lấy mặc định)
+    col_filter1, col_filter2 = st.columns(2)
+    with col_filter1:
+        default_role = st.session_state.get("saved_role", CS_ROLES[0])
+        role = st.selectbox("Lựa Chọn Nghề Nghiệp:", CS_ROLES, index=CS_ROLES.index(default_role))
+    with col_filter2:
+        danh_sach_kinh_nghiem = ["Tất cả mức kinh nghiệm", "Less than 1 year", "1-2 year", "3-5 years", "6-10 years", "More than 10 years"]
+        default_exp = st.session_state.get("saved_exp", danh_sach_kinh_nghiem[0])
+        exp = st.selectbox("Lựa Chọn Số Năm Kinh Nghiệm:", danh_sach_kinh_nghiem, index=danh_sach_kinh_nghiem.index(default_exp))
+
+    # Cập nhật lại session_state nếu người dùng đổi lựa chọn ngay tại Trang 4
+    st.session_state["saved_role"] = role
+    st.session_state["saved_exp"] = exp
 
     agent_configs = {
         "Computer Programmers": {
@@ -385,22 +437,63 @@ elif choice == "Đề xuất AI Agent":
         }
     }
 
-    role = st.selectbox("Lựa chọn nghề nghiệp:", list(agent_configs.keys()))
-
-    config = agent_configs[role]
-    
-    diem_gap = cs_gap[cs_gap["Occupation"] == role]["Gap"].values[0]
-    diem_muon = avg_desire.get(role, 0)
-    diem_may_gioi = avg_cap.get(role, 0)
+    # 3. Lọc dữ liệu và tính Gap
+    if exp == "Tất cả mức kinh nghiệm":
+        d_sub = df_merged[df_merged["Occupation (O*NET-SOC Title)"] == role]
+    else:
+        d_sub = df_merged[(df_merged["Occupation (O*NET-SOC Title)"] == role) & (df_merged["Experience"] == exp)]
 
     st.markdown("---")
-    st.subheader(f"Các AI Agent phù hợp cho nghề: {role}")
+    diem_may_gioi = avg_cap.get(role, 0)
+    base_config = agent_configs[role]
 
-    col1, col2 = st.columns([1, 2.5])
-    with col1:
-        st.metric("Điểm chênh lệch", f"{diem_gap:+.2f}")
-        st.write(f"**Nhân viên mong muốn:** {diem_muon:.2f}/5")
-        st.write(f"**AI làm được:** {diem_may_gioi:.2f}/5")
-    with col2:
-        st.markdown(f"**AI Agent:** {', '.join(config['agents'])}")
-        st.markdown(f"**Lý do khuyên dùng:** {config['reason']}")
+    if len(d_sub) > 0:
+        diem_muon = d_sub["Automation Desire Rating"].mean()
+        diem_gap = diem_muon - diem_may_gioi
+        st.session_state["saved_gap"] = diem_gap # Lưu lại phòng khi chuyển tab
+
+        # ===== LOGIC TỰ ĐỘNG ĐỀ XUẤT AGENT DỰA VÀO ĐIỂM GAP TÍNH ĐƯỢC =====
+        if diem_gap > 0.5:
+            loai_agent = "Autonomous Co-pilot (Trợ lý Tự chủ Hoàn toàn)"
+            danh_sach_agent = base_config['agents'] # Cấp full bộ Agent
+            chien_luoc = f"**Động lực áp đảo Nỗi lo:** Nhóm này đang quá tải và khát khao AI.\n\n **Chiến lược:** Cấp quyền tối đa. Để AI Agent tự động hóa hoàn toàn các task nhàm chán nhằm giải phóng sức lao động.\n\n*Chi tiết:* {base_config['reason']}"
+            mau_sac = "success"
+        elif diem_gap < -0.5:
+            loai_agent = "Review & Compliance Agent (Trợ lý Phân tích & Đệ trình)"
+            danh_sach_agent = [f"Drafting {base_config['agents'][0]}", "Audit Agent", "Compliance Checker"]
+            chien_luoc = f"**Nỗi lo áp đảo Động lực:** Nhóm này khắt khe, sợ mất kiểm soát và e dè rủi ro hệ thống.\n\n **Chiến lược:** Thiết lập mô hình Human-in-the-loop (Con người là trung tâm). AI Agent chỉ có nhiệm vụ tổng hợp thông tin, viết bản nháp và đệ trình. Quyết định bấm nút 'Approve' (Phê duyệt) cuối cùng bắt buộc phải do con người thực hiện."
+            mau_sac = "error"
+        else:
+            loai_agent = "Guidance & Guardrail Agent (Trợ lý Hướng dẫn & Kiểm duyệt)"
+            danh_sach_agent = [f"Step-by-step {base_config['agents'][0]}", "Validation Agent", "Knowledge Base Agent"]
+            chien_luoc = f"**Trạng thái Cân bằng:** Nhóm này có sự dè chừng nhất định, cần AI nhưng không tin tưởng tuyệt đối.\n\n **Chiến lược:** Không cấp quyền cho AI tự động chạy. AI Agent đóng vai trò hướng dẫn từng bước (Step-by-step) và cảnh báo rủi ro nếu thao tác sai."
+            mau_sac = "warning"
+
+        st.subheader(f"Cấu hình triển khai: {role}")
+        st.info(f"Dữ liệu đang dựa trên nhóm kinh nghiệm: **{exp}** | Điểm Gap hiện tại: **{diem_gap:+.2f}**")
+        
+        st.markdown(f"**🔹 Phân loại hệ thống AI:** {loai_agent}")
+        
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            if mau_sac == "success":
+                st.success("**Các Agent cần kích hoạt:**")
+            elif mau_sac == "error":
+                st.error("**Các Agent cần kích hoạt:**")
+            else:
+                st.warning("**Các Agent cần kích hoạt:**")
+                
+            for agent in danh_sach_agent:
+                st.markdown(f"- {agent}")
+                
+        with col2:
+            st.markdown("**Chiến lược Quản trị Rủi ro (HR Strategy):**")
+            if mau_sac == "success":
+                st.success(chien_luoc)
+            elif mau_sac == "error":
+                st.error(chien_luoc)
+            else:
+                st.warning(chien_luoc)
+
+    else:
+        st.warning(f"Không có dữ liệu khảo sát cho ngành **{role}** ở mức kinh nghiệm **{exp}**.")
