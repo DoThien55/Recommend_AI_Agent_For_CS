@@ -21,24 +21,31 @@
 
 Hệ thống phân tích chuyên sâu **13 ngành nghề trọng điểm** thuộc khối Khoa học Máy tính (CS Roles) và được chia làm 4 phân hệ chính điều hướng qua Sidebar:
 
-* **1. Tổng quan (Overview):** 
-  * Hiển thị thống kê nhanh số lượng mẫu và số ngành IT.
-  * Trực quan hóa **Top lý do muốn dùng AI** (Giải phóng thời gian, xử lý data lớn...) và **Top rào cản tâm lý** (Cần người duyệt chất lượng, trách nhiệm đạo đức/pháp lý...).
-* **2. Phân tích Độ Lệch (Gap Analysis):** 
-  * Tính toán chỉ số lệch bằng công thức $Gap = \text{Worker Desire} - \text{Expert Capacity}$.
-* **3. Phân tích Chuyên Sâu (CS Deep Dive):** 
-  * Tự động phân loại nhóm hành vi (*Nhóm Cẩn Thận, Nhóm Mệt Mỏi, Nhóm Cân Bằng*) để đưa ra lời khuyên quản trị nhân sự thực tế.
-* **4. Đề xuất AI Agent:**
-  * Khuyến nghị tự động cấu hình các AI Agent chuyên biệt phù hợp cho từng vị trí (Ví dụ: `Code Review Agent` cho Lập trình viên, `Self-healing Agent` cho SRE...) nhằm tối ưu hóa hiệu suất làm việc.
+### 2. Phân tích Độ Lệch (Gap Analysis)
+* Toán học hóa tâm lý bằng công thức: **`Gap = Điểm khao khát (Desire) - Điểm năng lực AI (Capacity)`**.
+* **Nhóm Đỏ (Gap < 0):** Vùng e dè. AI dư sức làm nhưng nhân sự từ chối giao phó.
+* **Nhóm Xanh (Gap > 0):** Vùng chờ đợi. Nhân sự quá tải, khao khát AI vượt xa năng lực công nghệ hiện tại.
 
+### 3. Phân tích Chuyên Sâu (CS Deep Dive)
+* Lọc dữ liệu theo cụm **Nghề nghiệp** và **Số năm kinh nghiệm**.
+* **Dynamic UI (Giao diện động):** Thuật toán tự động nhận diện điểm Gap để thay đổi giao diện hiển thị:
+    * *Gap > 0.5:* Chỉ hiển thị biểu đồ Động lực.
+    * *Gap < -0.5:* Chỉ hiển thị biểu đồ Nỗi lo / Rào cản.
+    * *-0.5 <= Gap <= 0.5:* Hiển thị đối trọng cả hai biểu đồ.
+
+### 4. Đề xuất AI Agent Tự Động (Actionable Recommendations)
+* Kế thừa dữ liệu từ bộ lọc bằng `st.session_state` để tự động hóa quy trình đề xuất.
+* Dựa vào chỉ số Gap, hệ thống tự động "kê đơn":
+    * **Gap > 0.5:** Đề xuất mô hình **Autonomous Co-pilot** (Cấp quyền tối đa để giải phóng sức lao động).
+    * **Gap < -0.5:** Đề xuất mô hình **Review & Compliance Agent** (Áp dụng chiến lược Human-in-the-loop, AI chỉ làm nháp, con người phê duyệt).
+    * **Cân bằng:** Đề xuất **Guidance & Guardrail Agent** (Hướng dẫn từng bước).
 ---
 
-## 🛠️ Công nghệ & Tối ưu 
-
-* **Framework & Thư viện:** `Python 3.11+`, `Streamlit`, `Pandas`, `Plotly Express` & `Graph Objects`.
-* **Cơ chế An toàn dữ liệu:** Tích hợp bọc `try-except` thông minh khi đọc file CSV. Thông báo lỗi UI an toàn thay vì crash ứng dụng.
-* **Tối ưu hiển thị:** Nhúng mã CSS trực tiếp để tối ưu hóa trải nghiệm trên màn hình lớn/máy chiếu (Chữ văn bản: **22px**, Tiêu đề: **30px**, Metric: **45px Bold**).
-
+## 🛠️ Công Nghệ Sử Dụng 
+* **Ngôn ngữ:** Python 3
+* **Framework:** Streamlit (Xây dựng UI/UX và tương tác web)
+* **Xử lý dữ liệu:** Pandas
+* **Trực quan hóa:** Plotly Express, Plotly Graph Objects
 ---
 
 ## 💻 Hướng dẫn Cài đặt & Khởi chạy
