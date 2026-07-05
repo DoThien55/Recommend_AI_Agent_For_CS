@@ -99,8 +99,6 @@ if choice == "Tổng quan":
     cs_desires = desires[desires["Occupation (O*NET-SOC Title)"].isin(CS_ROLES)]
     cs_capability = capability[capability["Occupation (O*NET-SOC Title)"].isin(CS_ROLES)]
 
-    st.markdown("**Dataset**: Phân tích các tác vụ từ người lao động và đánh giá từ chuyên gia AI")
-
     col1, col2, col3 = st.columns(3)
     col1.metric("Khảo sát Người lao động", f"{len(cs_desires):,}")
     col2.metric("Đánh giá từ Chuyên gia", f"{len(cs_capability):,}")
@@ -210,7 +208,7 @@ elif choice == "Gap Analysis":
     
     with col_red:
         st.error("""
-        **🛑 Nhóm Cảnh Giác & E Dè (Thanh màu Đỏ - Gap Âm):**
+        **🛑 Nhóm Cảnh Giác & E Dè (Điểm Gap < -0.5):**
         * **Đại diện tiêu biểu:** Database Administrators, Computer Network Support Specialists, Web Developers.
         * **Đặc điểm:** Đây là những người nắm giữ "huyết mạch" của hệ thống (dữ liệu khách hàng, máy chủ, hạ tầng mạng). Mọi sai sót của AI đều có thể gây sập hệ thống hoặc lộ dữ liệu nhạy cảm.
         * **Insight:** AI hiện tại đủ sức làm, nhưng nhân viên từ chối giao quyền tự quyết. Họ thà tự làm còn hơn chịu rủi ro đạo đức/pháp lý do AI gây ra.
@@ -218,14 +216,14 @@ elif choice == "Gap Analysis":
         
     with col_green:
         st.success("""
-        **🟢 Nhóm Khao Khát & Chờ Đợi (Thanh màu Xanh - Gap Dương):**
+        **🟢 Nhóm Khao Khát & Chờ Đợi (Điểm Gap > 0.5):**
         * **Đại diện tiêu biểu:** Computer and Information Research Scientists, Information Technology Project Managers.
         * **Đặc điểm:** Đây là những công việc thiên về xử lý khối lượng thông tin khổng lồ, đọc tài liệu khoa học, hoặc quản lý tiến độ tổng thể. Họ đang bị quá tải (cognitive overload).
         * **Insight:** Nhóm này sẵn sàng chấp nhận việc AI chưa hoàn hảo, miễn là AI giúp họ tóm tắt, tổng hợp và giảm bớt gánh nặng. Động lực giải phóng sức lao động hoàn toàn lấn át rào cản sợ hãi.
         """)
         
     st.info("""
-    **⚖️ Nhóm Cân Bằng (Khu vực trung tâm - Xấp xỉ 0):** \n
+    **⚖️ Nhóm Cân Bằng ( -0.5 < Điểm Gap < 0.5 ):** \n
     Các ngành như *Software Quality Assurance Analysts* hay *Computer Systems Analysts* có độ lệch không quá lớn. Họ hiểu rõ giới hạn của AI: biết dùng AI để tăng tốc công việc, nhưng vẫn ý thức được việc phải tự mình rà soát lại kết quả cuối cùng.
     """)
 # =====================================================================
@@ -363,9 +361,9 @@ elif choice == "CS Deep Dive":
 # =====================================================================
 elif choice == "Đề xuất AI Agent":
     st.title("Đề Xuất AI Agent Chuyên Biệt")
-    st.markdown("Cấu hình hệ thống AI được thiết kế tự động hóa dựa trên điểm Gap tâm lý của từng nhóm kinh nghiệm.")
+    st.markdown("Cấu hình hệ thống AI được thiết kế tự động hóa dựa trên **Điểm Gap** và **Năm kinh nghiệm** thực tế của người lao động.")
 
-    # 1. Gộp dữ liệu để tính toán giống Trang 3
+    # 1. Gộp dữ liệu để tính toán
     df_merged = pd.merge(desires, worker_metadata, on=['User ID', 'Occupation (O*NET-SOC Title)'], how='inner')
 
     # 2. Bộ lọc (Tự động lấy giá trị từ Session State nếu có, nếu không lấy mặc định)
@@ -378,18 +376,19 @@ elif choice == "Đề xuất AI Agent":
         default_exp = st.session_state.get("saved_exp", danh_sach_kinh_nghiem[0])
         exp = st.selectbox("Lựa Chọn Số Năm Kinh Nghiệm:", danh_sach_kinh_nghiem, index=danh_sach_kinh_nghiem.index(default_exp))
 
-    # Cập nhật lại session_state nếu người dùng đổi lựa chọn ngay tại Trang 4
+    # Cập nhật lại session_state
     st.session_state["saved_role"] = role
     st.session_state["saved_exp"] = exp
 
+    # TỪ ĐIỂN AI CƠ BẢN THEO NGÀNH NGHỀ
     agent_configs = {
         "Computer Programmers": {
             "agents": ["Code Generation Agent", "Code Review Agent", "Documentation Agent"],
-            "reason": "Lập trình viên thường chán nản khi viết đi viết lại những đoạn code cơ bản. Các AI Agent này sẽ giúp viết nháp, tự dò lỗi sai và tự động viết tài liệu giải thích code."
+            "reason": "Lập trình viên thường chán nản khi viết đi viết lại những đoạn code cơ bản. Các AI Agent này sẽ giúp viết nháp, tự dò lỗi sai và tự động viết tài liệu."
         },
         "Software Quality Assurance Analysts and Testers": {
             "agents": ["Test Automation Agent", "Bug Detection Agent", "Test Case Generator"],
-            "reason": "Việc bấm thử phần mềm hàng ngàn lần rất tốn thời gian. AI Agent có thể tự động viết kịch bản test, chạy thử ngầm mỗi đêm và báo cáo lỗi (bug)."
+            "reason": "AI Agent có thể tự động viết kịch bản test, chạy thử ngầm mỗi đêm và báo cáo lỗi (bug) để tiết kiệm thời gian bấm thử thủ công."
         },
         "Web Developers": {
             "agents": ["Web Dev Agent", "UI-to-Code Agent", "Accessibility Agent"],
@@ -397,23 +396,23 @@ elif choice == "Đề xuất AI Agent":
         },
         "Database Administrators": {
             "agents": ["DBA Agent", "Query Optimization Agent", "NL2SQL Agent"],
-            "reason": "AI đọc dữ liệu siêu nhanh, giúp tìm ra nguyên nhân làm trang web bị chậm, tự động dọn dẹp và sao lưu (backup) dữ liệu mỗi ngày."
+            "reason": "AI đọc dữ liệu siêu nhanh, giúp tìm ra nguyên nhân làm trang web bị chậm, tự động dọn dẹp và sao lưu (backup)."
         },
         "Network and Computer Systems Administrators": {
             "agents": ["Network Admin Agent", "Self-healing Agent", "Security Response Agent"],
-            "reason": "Con người không thể thức 24/7 để canh máy chủ. AI Agent sẽ trực thay, nếu thấy mạng nghẽn thì tự động phân luồng lại cho hết nghẽn."
+            "reason": "Con người không thể thức 24/7. AI Agent sẽ trực thay, tự động phân luồng lại mạng nếu thấy có dấu hiệu nghẽn."
         },
         "Computer Network Support Specialists": {
             "agents": ["Helpdesk Agent", "Troubleshooting Agent", "Network Monitoring Agent"],
-            "reason": "Đỡ đần việc trả lời tin nhắn của nhân viên. AI có thể chẩn đoán mạng lỗi do đâu và chỉ cho người dùng cách khởi động lại."
+            "reason": "AI chẩn đoán mạng lỗi do đâu và tự động phản hồi cách khắc phục cơ bản cho nhân viên."
         },
         "Computer User Support Specialists": {
             "agents": ["IT Helpdesk Agent", "FAQ Bot", "Remote Troubleshooting Agent"],
-            "reason": "Tự động hướng dẫn người dùng cuối giải quyết mấy lỗi vặt như quên mật khẩu, máy in không chạy, màn hình xanh."
+            "reason": "Tự động hướng dẫn người dùng cuối giải quyết mấy lỗi vặt như quên mật khẩu, máy in không chạy."
         },
         "Computer and Information Research Scientists": {
             "agents": ["Research Agent", "Literature Review Agent", "Experiment Design Agent"],
-            "reason": "Nhà nghiên cứu mất rất nhiều thời gian đọc tài liệu. AI sẽ đọc hộ hàng ngàn bài báo khoa học, tóm tắt lại và gợi ý cách làm thí nghiệm."
+            "reason": "AI sẽ đọc hộ hàng ngàn bài báo khoa học, tóm tắt lại và gợi ý các khung thiết kế thí nghiệm."
         },
         "Computer Systems Analysts": {
             "agents": ["Requirement Analysis Agent", "System Design Agent", "Documentation Agent"],
@@ -421,7 +420,7 @@ elif choice == "Đề xuất AI Agent":
         },
         "Computer Systems Engineers/Architects": {
             "agents": ["Architecture Review Agent", "Design Validation Agent", "Tech Stack Advisor"],
-            "reason": "Kiểm tra lại xem bản thiết kế hệ thống có bị hổng bảo mật hay không, gợi ý xem nên dùng công nghệ gì thì rẻ và tốt nhất."
+            "reason": "Kiểm tra lại xem bản thiết kế hệ thống có bị hổng bảo mật hay không, gợi ý tech-stack rẻ và tốt nhất."
         },
         "Information Security Analysts": {
             "agents": ["Security Monitoring Agent", "Threat Detection Agent", "Compliance Checker"],
@@ -429,7 +428,7 @@ elif choice == "Đề xuất AI Agent":
         },
         "Information Technology Project Managers": {
             "agents": ["Project Planning Agent", "Risk Monitoring Agent", "Report Generator"],
-            "reason": "Tự động gom số liệu công việc từ các phòng ban, đoán xem dự án có bị trễ hạn không và tự động vẽ báo cáo cho Sếp."
+            "reason": "Tự động gom số liệu tiến độ từ các phòng ban, dự báo rủi ro trễ hạn và tự động vẽ báo cáo cho Sếp."
         },
         "Computer and Information Systems Managers": {
             "agents": ["Dashboard Agent", "Resource Planning Agent", "Decision Support Agent"],
@@ -437,7 +436,7 @@ elif choice == "Đề xuất AI Agent":
         }
     }
 
-    # 3. Lọc dữ liệu và tính Gap
+    # 3. Lọc dữ liệu và lấy thông số cơ bản
     if exp == "Tất cả mức kinh nghiệm":
         d_sub = df_merged[df_merged["Occupation (O*NET-SOC Title)"] == role]
     else:
@@ -447,53 +446,72 @@ elif choice == "Đề xuất AI Agent":
     diem_may_gioi = avg_cap.get(role, 0)
     base_config = agent_configs[role]
 
+    # PHÂN LỚP 1: ĐIỀU CHỈNH LOẠI AGENT DỰA VÀO NĂM KINH NGHIỆM
+    if exp in ["Less than 1 year", "1-2 year"]:
+        danh_sach_agent_de_xuat = [f"Tutor Agent (Hướng dẫn {base_config['agents'][0]})", "Syntax & Rule Checker", "Learning Path Agent"]
+        vai_tro_kinh_nghiem = "Nhóm người lao động mới còn yếu quy trình, dễ mắc sai lầm cơ bản. AI lúc này đóng vai trò như một **'Gia sư khó tính'**, tập trung rà lỗi, cảnh báo và giải thích chứ không tự động làm thay toàn bộ (để tránh thói quen copy-paste)."
+    elif exp in ["6-10 years", "More than 10 years"]:
+        danh_sach_agent_de_xuat = ["Architecture Copilot", "Team Approval Dashboard", f"Strategic {base_config['agents'][1]}"]
+        vai_tro_kinh_nghiem = "Nhóm nhân sự kỳ cựu chủ yếu làm nhiệm vụ thiết kế kiến trúc và quản lý. AI đóng vai trò **'Cố vấn cấp cao'**, giúp phân tích lỗ hổng cấu trúc tổng thể và dọn sẵn báo cáo để họ xét duyệt công việc của cấp dưới."
+    else:
+        danh_sach_agent_de_xuat = base_config['agents']
+        vai_tro_kinh_nghiem = f"Nhóm 'thợ chính' đang gánh vác khối lượng công việc lớn nhất. AI đóng vai trò **'Trợ lý đắc lực'**, tự động hóa các tác vụ lặp đi lặp lại để họ tập trung vào chuyên môn sâu. \n\n*Chi tiết:* {base_config['reason']}"
+
+
     if len(d_sub) > 0:
         diem_muon = d_sub["Automation Desire Rating"].mean()
         diem_gap = diem_muon - diem_may_gioi
-        st.session_state["saved_gap"] = diem_gap # Lưu lại phòng khi chuyển tab
+        st.session_state["saved_gap"] = diem_gap 
 
-        # ===== LOGIC TỰ ĐỘNG ĐỀ XUẤT AGENT DỰA VÀO ĐIỂM GAP TÍNH ĐƯỢC =====
+        # PHÂN LỚP 2: QUYẾT ĐỊNH QUYỀN HẠN CỦA AI BẰNG ĐIỂM GAP
         if diem_gap > 0.5:
             loai_agent = "Autonomous Co-pilot (Trợ lý Tự chủ Hoàn toàn)"
-            danh_sach_agent = base_config['agents'] # Cấp full bộ Agent
-            chien_luoc = f"**Động lực áp đảo Nỗi lo:** Nhóm này đang quá tải và khát khao AI.\n\n **Chiến lược:** Cấp quyền tối đa. Để AI Agent tự động hóa hoàn toàn các task nhàm chán nhằm giải phóng sức lao động.\n\n*Chi tiết:* {base_config['reason']}"
+            danh_sach_cuoi_cung = danh_sach_agent_de_xuat
+            chien_luoc = f"**1. Chiến lược theo Kinh nghiệm:** {vai_tro_kinh_nghiem}\n\n**2. Quản trị Tâm lý (Gap > 0.5):** Động lực đang áp đảo hoàn toàn nỗi lo. Nhóm này đang quá tải và khát khao AI. Quyết định **cấp quyền tối đa** cho các Agent trên để giải phóng sức lao động."
             mau_sac = "success"
+            
         elif diem_gap < -0.5:
             loai_agent = "Review & Compliance Agent (Trợ lý Phân tích & Đệ trình)"
-            danh_sach_agent = [f"Drafting {base_config['agents'][0]}", "Audit Agent", "Compliance Checker"]
-            chien_luoc = f"**Nỗi lo áp đảo Động lực:** Nhóm này khắt khe, sợ mất kiểm soát và e dè rủi ro hệ thống.\n\n **Chiến lược:** Thiết lập mô hình Human-in-the-loop (Con người là trung tâm). AI Agent chỉ có nhiệm vụ tổng hợp thông tin, viết bản nháp và đệ trình. Quyết định bấm nút 'Approve' (Phê duyệt) cuối cùng bắt buộc phải do con người thực hiện."
+            danh_sach_cuoi_cung = [f"Drafting {danh_sach_agent_de_xuat[0]}", "Strict Audit Agent", "Compliance Checker"]
+            chien_luoc = f"**1. Chiến lược theo Kinh nghiệm:** {vai_tro_kinh_nghiem}\n\n**2. Quản trị Tâm lý (Gap < -0.5):** Nỗi lo sợ mất kiểm soát đang lấn át. Bắt buộc thiết lập mô hình **Human-in-the-loop (Con người là trung tâm)**. AI chỉ được viết nháp, lệnh 'Approve' cuối cùng phải do con người bấm."
             mau_sac = "error"
+            
         else:
-            loai_agent = "Guidance & Guardrail Agent (Trợ lý Hướng dẫn & Kiểm duyệt)"
-            danh_sach_agent = [f"Step-by-step {base_config['agents'][0]}", "Validation Agent", "Knowledge Base Agent"]
-            chien_luoc = f"**Trạng thái Cân bằng:** Nhóm này có sự dè chừng nhất định, cần AI nhưng không tin tưởng tuyệt đối.\n\n **Chiến lược:** Không cấp quyền cho AI tự động chạy. AI Agent đóng vai trò hướng dẫn từng bước (Step-by-step) và cảnh báo rủi ro nếu thao tác sai."
-            mau_sac = "warning"
+            if diem_muon >= 4.0:
+                loai_agent = "Autonomous Co-pilot (Trợ lý Tự chủ Hoàn toàn)"
+                danh_sach_cuoi_cung = danh_sach_agent_de_xuat
+                chien_luoc = f"**1. Chiến lược theo Kinh nghiệm:** {vai_tro_kinh_nghiem}\n\n**2. Quản trị Tâm lý (Vùng Đèn Xanh Lý Tưởng):** Cả khao khát và năng lực AI đều ở mức đỉnh. Giao phó **toàn quyền** cho AI để tối ưu hóa triệt để năng suất."
+                mau_sac = "success"
+            elif diem_muon <= 2.0:
+                loai_agent = "No AI / Traditional Tools (Không áp dụng Agent)"
+                danh_sach_cuoi_cung = ["Duy trì công cụ phần mềm hiện tại", "Không đề xuất tự động hóa"]
+                chien_luoc = f"**1. Chiến lược theo Kinh nghiệm:** {vai_tro_kinh_nghiem}\n\n**2. Quản trị Tâm lý (Vùng Ưu Tiên Thấp):** Nhân sự không muốn dùng, năng lực AI cũng kém. **Tạm dừng** triển khai AI ở khâu này để tránh lãng phí ngân sách."
+                mau_sac = "error"
+            else:
+                loai_agent = "Guidance & Guardrail Agent (Trợ lý Hướng dẫn & Kiểm duyệt)"
+                danh_sach_cuoi_cung = [f"Step-by-step {danh_sach_agent_de_xuat[0]}", "Validation Agent"]
+                chien_luoc = f"**1. Chiến lược theo Kinh nghiệm:** {vai_tro_kinh_nghiem}\n\n**2. Quản trị Tâm lý (Trạng thái Cân bằng):** Nhóm này cần AI nhưng vẫn dè chừng rủi ro. AI đóng vai trò **song hành**, hướng dẫn từng bước và cảnh báo nếu có thao tác sai."
+                mau_sac = "warning"
 
-        st.subheader(f"Cấu hình triển khai: {role}")
+        # HIỂN THỊ GIAO DIỆN
+        st.subheader(f"Ngành Nghề: {role}")
         st.info(f"Dữ liệu đang dựa trên nhóm kinh nghiệm: **{exp}** | Điểm Gap hiện tại: **{diem_gap:+.2f}**")
         
         st.markdown(f"**🔹 Phân loại hệ thống AI:** {loai_agent}")
         
         col1, col2 = st.columns([1, 2])
         with col1:
-            if mau_sac == "success":
-                st.success("**Các Agent cần kích hoạt:**")
-            elif mau_sac == "error":
-                st.error("**Các Agent cần kích hoạt:**")
-            else:
-                st.warning("**Các Agent cần kích hoạt:**")
+            if mau_sac == "success": st.success("**Các Agent cần kích hoạt:**")
+            elif mau_sac == "error": st.error("**Các Agent cần kích hoạt:**")
+            else: st.warning("**Các Agent cần kích hoạt:**")
                 
-            for agent in danh_sach_agent:
+            for agent in danh_sach_cuoi_cung:
                 st.markdown(f"- {agent}")
                 
         with col2:
-            st.markdown("**Chiến lược Quản trị Rủi ro (HR Strategy):**")
-            if mau_sac == "success":
-                st.success(chien_luoc)
-            elif mau_sac == "error":
-                st.error(chien_luoc)
-            else:
-                st.warning(chien_luoc)
+            if mau_sac == "success": st.success(chien_luoc)
+            elif mau_sac == "error": st.error(chien_luoc)
+            else: st.warning(chien_luoc)
 
     else:
         st.warning(f"Không có dữ liệu khảo sát cho ngành **{role}** ở mức kinh nghiệm **{exp}**.")

@@ -1,4 +1,4 @@
-# 📊 🌐 Đo Lường Khoảng Trống AI: Đánh Giá Năng Lực Tự Động Hóa Và Nhu Cầu Của Người Lao Động Trong Khối Ngành Khoa Học Máy Tính
+# 📊  Định hướng ứng dụng AI thông qua phân tích độ lệch (Gap Analysis) giữa mong muốn của người lao động và ranh giới công nghệ.
 
 Ứng dụng web trực quan hóa dữ liệu được xây dựng trên nền tảng **Streamlit** nhằm hỗ trợ các nhà quản lý, kỹ sư công nghệ và chuyên gia AI có góc nhìn sâu sắc về nhu cầu thực tế của người lao động đối lập với năng lực công nghệ hiện tại trong ngành Khoa học Máy tính. Từ đó, hệ thống đưa ra các giải pháp cấu hình **AI Agent** tối ưu nhất cho từng vị trí công việc chuyên biệt, giúp tối ưu hóa ROI và quản trị rủi ro nhân sự.
 
